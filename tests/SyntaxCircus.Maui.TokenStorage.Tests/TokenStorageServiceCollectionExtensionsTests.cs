@@ -39,4 +39,68 @@ public class TokenStorageServiceCollectionExtensionsTests
         provider.GetRequiredService<ISecureTokenStorage>().ShouldBeSameAs(provider.GetRequiredService<ISecureTokenStorage>());
         provider.GetRequiredService<SessionTokenStore>().ShouldBeSameAs(provider.GetRequiredService<SessionTokenStore>());
     }
+
+    private sealed record TestSession(string Name);
+
+    [Fact]
+    public void AddInstallationIdentityStore_NullServices_ThrowsArgumentNullException()
+        => Should.Throw<ArgumentNullException>(() =>
+            TokenStorageServiceCollectionExtensions.AddInstallationIdentityStore(null!));
+
+    [Fact]
+    public void AddInstallationIdentityStore_RegistersResolvableSingleton()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInstallationIdentityStore();
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<InstallationIdentityStore>()
+            .ShouldBeSameAs(provider.GetRequiredService<InstallationIdentityStore>());
+        provider.GetRequiredService<ISecureTokenStorage>().ShouldBeOfType<SecureTokenStorage>();
+    }
+
+    [Fact]
+    public void AddKeyedSessionStore_NullServices_ThrowsArgumentNullException()
+        => Should.Throw<ArgumentNullException>(() =>
+            TokenStorageServiceCollectionExtensions.AddKeyedSessionStore<TestSession>(null!, "prefix"));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AddKeyedSessionStore_NullOrWhitespaceKeyPrefix_ThrowsArgumentException(string? keyPrefix)
+    {
+        var services = new ServiceCollection();
+
+        Should.Throw<ArgumentException>(() => services.AddKeyedSessionStore<TestSession>(keyPrefix!));
+    }
+
+    [Fact]
+    public void AddKeyedSessionStore_RegistersResolvableSingleton()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddKeyedSessionStore<TestSession>("test");
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<KeyedSessionStore<TestSession>>()
+            .ShouldBeSameAs(provider.GetRequiredService<KeyedSessionStore<TestSession>>());
+    }
+
+    [Fact]
+    public void AddSecureTokenStorage_ThenAddInstallationIdentityStore_DoesNotDuplicateSecureStorageRegistration()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddSecureTokenStorage();
+        services.AddInstallationIdentityStore();
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetServices<ISecureTokenStorage>().Count().ShouldBe(1);
+        provider.GetRequiredService<ISecureTokenStorage>().ShouldBeOfType<SecureTokenStorage>();
+    }
 }
