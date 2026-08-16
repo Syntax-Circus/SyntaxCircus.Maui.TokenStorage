@@ -1,0 +1,22 @@
+name: Build
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: ["*"]
+
+jobs:
+  build:
+    # Android + iOS workloads both need a macOS toolchain (Xcode for iOS codegen).
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # GitVersion needs full history, not a shallow clone
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet workload restore SyntaxCircus.Maui.TokenStorage.slnx
+      - run: dotnet restore SyntaxCircus.Maui.TokenStorage.slnx
+      - run: dotnet build SyntaxCircus.Maui.TokenStorage.slnx --no-restore --configuration Release
