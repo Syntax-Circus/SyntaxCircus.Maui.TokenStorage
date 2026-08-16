@@ -1,6 +1,7 @@
 # SyntaxCircus.Maui.TokenStorage
 
 [![Build](https://github.com/Syntax-Circus/SyntaxCircus.Maui.TokenStorage/actions/workflows/build.yml/badge.svg)](https://github.com/Syntax-Circus/SyntaxCircus.Maui.TokenStorage/actions/workflows/build.yml)
+[![NuGet](https://img.shields.io/nuget/v/SyntaxCircus.Maui.TokenStorage.svg)](https://www.nuget.org/packages/SyntaxCircus.Maui.TokenStorage)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
 
 Secure auth token storage for MAUI apps: an injectable wrapper over `ISecureStorage`, and a session layer that splits sensitive tokens (secure storage) from non-sensitive metadata (`IPreferences`) so expiry checks don't need a keystore round-trip on every read.
