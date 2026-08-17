@@ -19,7 +19,7 @@ Secure auth token storage for MAUI apps: an injectable wrapper over `ISecureStor
 builder.Services.AddSecureTokenStorage();
 ```
 
-`AddSecureTokenStorage()` registers `ISecureTokenStorage` and `SessionTokenStore`. `KeyedSessionStore<TSession>` and `InstallationIdentityStore` (see below) are separate, opt-in registrations — `AddKeyedSessionStore<TSession>(keyPrefix)` and `AddInstallationIdentityStore()` — and can be combined with `AddSecureTokenStorage()` freely; all three share the same underlying `ISecureTokenStorage`/`IPreferences` registrations without duplicating them.
+`AddSecureTokenStorage()` registers `ISecureTokenStorage` and `SessionTokenStore` (also resolvable as `ISessionTokenStore`, same singleton instance). `KeyedSessionStore<TSession>` and `InstallationIdentityStore` (see below) are separate, opt-in registrations — `AddKeyedSessionStore<TSession>(keyPrefix)` and `AddInstallationIdentityStore()` — and can be combined with `AddSecureTokenStorage()` freely; all three share the same underlying `ISecureTokenStorage`/`IPreferences` registrations without duplicating them.
 
 ## Choosing a store
 
@@ -118,9 +118,9 @@ Generic key/value secure storage, abstracted so it's constructor-injectable and 
 
 `record SessionTokens(string AccessToken, string? RefreshToken, DateTimeOffset ExpiresAt, string? UserId, string? Email, bool IsAnonymous)` — the OIDC-style token set and session metadata `SessionTokenStore` persists.
 
-### `SessionTokenStore`
+### `ISessionTokenStore` / `SessionTokenStore`
 
-`SessionTokenStore(ISecureTokenStorage secureTokenStorage, IPreferences preferences, ILogger<SessionTokenStore> logger)`
+`SessionTokenStore(ISecureTokenStorage secureTokenStorage, IPreferences preferences, ILogger<SessionTokenStore> logger)` implements `ISessionTokenStore`.
 
 | Member | Description |
 |---|---|
@@ -131,6 +131,7 @@ Generic key/value secure storage, abstracted so it's constructor-injectable and 
 | `bool IsAnonymous()` | Defaults to `true` if nothing has been stored yet. |
 | `string? GetUserId()` | Returns the stored user id, or `null` if empty/unset. |
 | `string? GetEmail()` | Returns the stored email, or `null` if empty/unset. |
+| `DateTimeOffset? GetExpiresAt()` | Returns the stored access token's raw expiry, or `null` if nothing has been stored. No clock-skew margin (unlike `HasValidAccessToken()`). |
 | `Task ClearAsync()` | Removes all stored tokens and session metadata (sign-out). |
 
 ### `KeyedSessionStore<TSession>` where `TSession : class`
@@ -162,7 +163,7 @@ For installation-credential auth models, where a device authenticates with a sel
 
 | Member | Description |
 |---|---|
-| `IServiceCollection AddSecureTokenStorage()` | Registers `ISecureTokenStorage`/`SessionTokenStore` (and their `ISecureStorage`/`IPreferences` dependencies) as singletons. |
+| `IServiceCollection AddSecureTokenStorage()` | Registers `ISecureTokenStorage`/`SessionTokenStore` (also resolvable as `ISessionTokenStore`, same singleton) and their `ISecureStorage`/`IPreferences` dependencies as singletons. |
 | `IServiceCollection AddInstallationIdentityStore()` | Registers `InstallationIdentityStore` as a singleton; idempotent alongside `AddSecureTokenStorage()`. |
 | `IServiceCollection AddKeyedSessionStore<TSession>(string keyPrefix, TimeSpan? clockSkewMargin = null, JsonSerializerOptions? jsonSerializerOptions = null)` | Registers a `KeyedSessionStore<TSession>` singleton for `keyPrefix`; idempotent alongside the other two. Call once per distinct `TSession`. |
 

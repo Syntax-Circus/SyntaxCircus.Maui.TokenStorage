@@ -5,7 +5,8 @@ public static class TokenStorageServiceCollectionExtensions
     /// <summary>
     /// Registers <see cref="ISecureTokenStorage"/> (backed by <see cref="SecureStorage.Default"/>),
     /// <see cref="IPreferences"/> (backed by <see cref="Preferences.Default"/>), and
-    /// <see cref="SessionTokenStore"/> as singletons.
+    /// <see cref="SessionTokenStore"/> (also exposed as <see cref="ISessionTokenStore"/>, same
+    /// singleton instance) as singletons.
     /// </summary>
     public static IServiceCollection AddSecureTokenStorage(this IServiceCollection services)
     {
@@ -15,6 +16,7 @@ public static class TokenStorageServiceCollectionExtensions
         services.AddSingleton(Preferences.Default);
         services.AddSingleton<ISecureTokenStorage, SecureTokenStorage>();
         services.AddSingleton<SessionTokenStore>();
+        services.AddSingleton<ISessionTokenStore>(sp => sp.GetRequiredService<SessionTokenStore>());
 
         return services;
     }
