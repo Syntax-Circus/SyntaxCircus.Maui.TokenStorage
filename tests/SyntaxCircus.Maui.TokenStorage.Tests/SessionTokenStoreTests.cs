@@ -153,6 +153,55 @@ public class SessionTokenStoreTests
     }
 
     [Fact]
+    public void GetExpiresAt_NothingStored_ReturnsNull()
+    {
+        var (store, _, preferences) = CreateStore();
+        preferences.Get(ExpiresAtKey, string.Empty).Returns(string.Empty);
+
+        store.GetExpiresAt().ShouldBeNull();
+    }
+
+    [Fact]
+    public void GetExpiresAt_ZeroExpiry_ReturnsNull()
+    {
+        var (store, _, preferences) = CreateStore();
+        preferences.Get(ExpiresAtKey, string.Empty).Returns("0");
+
+        store.GetExpiresAt().ShouldBeNull();
+    }
+
+    [Fact]
+    public void GetExpiresAt_UnparseableExpiry_ReturnsNull()
+    {
+        var (store, _, preferences) = CreateStore();
+        preferences.Get(ExpiresAtKey, string.Empty).Returns("not-a-number");
+
+        store.GetExpiresAt().ShouldBeNull();
+    }
+
+    [Fact]
+    public void GetExpiresAt_ValueStored_ReturnsParsedValue()
+    {
+        var (store, _, preferences) = CreateStore();
+        preferences.Get(ExpiresAtKey, string.Empty).Returns("2000000000");
+
+        store.GetExpiresAt().ShouldBe(DateTimeOffset.FromUnixTimeSeconds(2_000_000_000));
+    }
+
+    [Fact]
+    public void GetExpiresAt_TruncatesToSeconds_MatchesStoreAsyncFormat()
+    {
+        var (store, _, preferences) = CreateStore();
+        // Sub-second precision is lost by the Unix-seconds string storage format StoreAsync
+        // uses — assert against the truncated value, not the original.
+        var expiresAt = DateTimeOffset.UtcNow.AddHours(1).AddMilliseconds(456);
+        var storedValue = expiresAt.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+        preferences.Get(ExpiresAtKey, string.Empty).Returns(storedValue);
+
+        store.GetExpiresAt().ShouldBe(DateTimeOffset.FromUnixTimeSeconds(expiresAt.ToUnixTimeSeconds()));
+    }
+
+    [Fact]
     public async Task GetAccessTokenAsync_ReturnsStoredValue()
     {
         var (store, secureStorage, _) = CreateStore();

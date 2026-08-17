@@ -6,6 +6,7 @@ namespace SyntaxCircus.Maui.TokenStorage;
 /// round-trip.
 /// </summary>
 public sealed partial class SessionTokenStore(ISecureTokenStorage secureTokenStorage, IPreferences preferences, ILogger<SessionTokenStore> logger)
+    : ISessionTokenStore
 {
     private const string AccessTokenKey = "syntaxcircus_access_token";
     private const string RefreshTokenKey = "syntaxcircus_refresh_token";
@@ -41,14 +42,21 @@ public sealed partial class SessionTokenStore(ISecureTokenStorage secureTokenSto
     /// </summary>
     public bool HasValidAccessToken()
     {
-        var raw = preferences.Get(ExpiresAtKey, string.Empty);
-        if (!long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expiresAtSeconds) || expiresAtSeconds == 0)
-        {
-            return false;
-        }
+        var expiresAt = GetExpiresAt();
+        return expiresAt is not null && DateTimeOffset.UtcNow.AddSeconds(60) < expiresAt;
+    }
 
-        var expiresAt = DateTimeOffset.FromUnixTimeSeconds(expiresAtSeconds);
-        return DateTimeOffset.UtcNow.AddSeconds(60) < expiresAt;
+    /// <summary>
+    /// Returns the stored access token's raw expiry (read from <see cref="IPreferences"/>, no
+    /// keystore round-trip), or <see langword="null"/> if nothing has been stored yet. Unlike
+    /// <see cref="HasValidAccessToken"/>, this applies no clock-skew margin.
+    /// </summary>
+    public DateTimeOffset? GetExpiresAt()
+    {
+        var raw = preferences.Get(ExpiresAtKey, string.Empty);
+        return long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expiresAtSeconds) && expiresAtSeconds != 0
+            ? DateTimeOffset.FromUnixTimeSeconds(expiresAtSeconds)
+            : null;
     }
 
     public async Task<string?> GetAccessTokenAsync()

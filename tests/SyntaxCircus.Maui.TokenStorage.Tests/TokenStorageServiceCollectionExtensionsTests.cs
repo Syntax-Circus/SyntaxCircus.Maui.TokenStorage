@@ -23,6 +23,7 @@ public class TokenStorageServiceCollectionExtensionsTests
 
         provider.GetRequiredService<ISecureTokenStorage>().ShouldBeOfType<SecureTokenStorage>();
         provider.GetRequiredService<SessionTokenStore>().ShouldNotBeNull();
+        provider.GetRequiredService<ISessionTokenStore>().ShouldNotBeNull();
         provider.GetRequiredService<ISecureStorage>().ShouldNotBeNull();
         provider.GetRequiredService<IPreferences>().ShouldNotBeNull();
     }
@@ -38,6 +39,7 @@ public class TokenStorageServiceCollectionExtensionsTests
 
         provider.GetRequiredService<ISecureTokenStorage>().ShouldBeSameAs(provider.GetRequiredService<ISecureTokenStorage>());
         provider.GetRequiredService<SessionTokenStore>().ShouldBeSameAs(provider.GetRequiredService<SessionTokenStore>());
+        provider.GetRequiredService<ISessionTokenStore>().ShouldBeSameAs(provider.GetRequiredService<SessionTokenStore>());
     }
 
     private sealed record TestSession(string Name);
